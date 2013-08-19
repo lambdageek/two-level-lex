@@ -12,14 +12,18 @@ Copyright: (c) 2013 Aleksey Kliger
 Executable two-level-lex
   main-is: Main.hs
   ghc-options: -Wall
-  build-depends: 
+  build-depends:
     base,
+    array,
     transformers,
     containers,
     mtl >= 2.1.2
-    
+
   hs-source-dirs: main, src
   other-modules:
+    Data.Reversed
+    TwoLevelLex.Lex
+    TwoLevelLex.Parse
     TwoLevelLex.AST
     TwoLevelLex.Check
     TwoLevelLex.Step

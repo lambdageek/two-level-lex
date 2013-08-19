@@ -11,29 +11,14 @@ import Control.Monad.State
 import Control.Monad.Error
 import Control.Monad.Identity
 
-import Data.Function
 import Data.List hiding (lookup)
 import qualified Data.List as L
 import Data.Monoid
+import Data.Reversed
 
 import TwoLevelLex.AST
 
 import qualified Data.Map as M
-
-newtype Reversed a = Reversed { getReversed :: a }
-                     deriving (Eq, Show)
-                              
-instance Ord a => Ord (Reversed a) where
-  compare x y = oppOrd ((compare `on` getReversed) x y)
-    where oppOrd LT = GT
-          oppOrd GT = LT
-          oppOrd EQ = EQ
-  
-
-consR :: Reversed [a] -> a -> Reversed [a]
-consR r x = Reversed (x : getReversed r)
-
-
 
 data Value =
   LitV Literal
