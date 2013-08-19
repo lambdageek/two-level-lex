@@ -37,7 +37,7 @@ consR r x = Reversed (x : getReversed r)
 
 data Value =
   LitV Literal
-  | ContV ValEnv [Name] Expr
+  | LamV ValEnv [Name] Expr
   | TupleV [Value]
     deriving Show
 
@@ -148,9 +148,9 @@ isHalted (EvalO _) = return Nothing
     
 evaluate :: Monad m => Expr -> StepM m Op
 evaluate (LitE l) = returnO $ LitV l
-evaluate (LabelE bs e) = do
+evaluate (LamE bs e) = do
   env <- use stEnv
-  returnO $ ContV env (map fst bs) e
+  returnO $ LamV env (map fst bs) e
 evaluate (VarE x) = do
   v <- lookup x
   returnO v
@@ -196,7 +196,7 @@ applyLabel (l, args) = do
   c <- lookup l
   vs <- mapM lookup args
   (env, ps, expr) <- case c of
-    (ContV env ps expr) -> return (env, ps, expr)
+    (LamV env ps expr) -> return (env, ps, expr)
     _ -> throwError "expected continuation"
   replaceEnv env
   sequence_ $ zipWith store ps vs

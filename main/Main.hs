@@ -7,16 +7,17 @@ import TwoLevelLex.Step
 parse :: IO Program
 parse = return $ Program (LetE ("x", IntT) (LitE 15) $
                           LetE ("y", IntT) (LitE 12) $ 
-                          LetE ("c0", LabelT [])
-                          (LabelE [] $
+                          LetE ("c0", FunT [] (ProdT [IntT]))
+                          (LamE [] $
                            LetE ("t", ProdT [IntT]) (AsmE [("z", IntT)]
                                                      [
                                                        AddI "x" "y" "z"
                                                      , AddI "x" "z" "z"
                                                      ]) $
-                           ProjE (nat 0) (VarE "t")) $
+                           VarE "t") $
                           LetE ("zero", IntT) (LitE 0) $
-                          AsmE [] [ BrI EqBC "zero" ("c0", []) ("c0", []) ])
+                          LetE ("r", ProdT [IntT]) (AsmE [("_dk", IntT)] [ BrI EqBC "zero" ("c0", []) ("c0", []) ]) $
+                          ProjE (nat 0) (VarE "r"))
                                                      
 
 main :: IO ()

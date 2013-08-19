@@ -21,7 +21,9 @@ newtype ModEnv = ModEnv { getModEnv :: M.Map Name Ty }
 
 type C m = ReaderT TyEnv (ErrorT String m)
 
-type CA m = ReaderT ModEnv m
+type ResTy = Ty
+
+type CA m = ReaderT (ModEnv, ResTy) m
 
 lookup :: Monad m => Name -> C m Ty
 lookup x = do
@@ -53,28 +55,35 @@ checkExpr (LetE (x,t0) e1 e2) = do
   unless (t0 == t) $ throwError $ "expected expression of type " ++ show t0 ++ ", got " ++ show t
   local (bind x t) $ checkExpr e2
 checkExpr (AsmE bs is) = do
-  withModifiable bs $ checkAsm is
+  withAsmEnv bs $ checkAsm is
   return . ProdT $ map snd bs
-checkExpr (LabelE bs e) = do
-  void $ local (flip (foldl (\g (x,t) -> bind x t g)) bs) $ checkExpr e
-  return . LabelT $ map snd bs
+checkExpr (LamE bs e) = do
+  tres <- local (flip (foldl (\g (x,t) -> bind x t g)) bs) $ checkExpr e
+  return $ FunT (map snd bs) tres
 
 modifiableEnv :: [ValBind] -> ModEnv
 modifiableEnv = ModEnv . M.fromList
 
-withModifiable :: Monad m => [ValBind] -> CA (C m) a -> C m a
-withModifiable bs act = runReaderT act (modifiableEnv bs)
+withAsmEnv :: Monad m => [ValBind] -> CA (C m) a -> C m a
+withAsmEnv bs act = runReaderT act (modifiableEnv bs, resTy)
+  where resTy = ProdT (map snd bs)
 
 lookupAsm :: Monad m => Name -> CA (C m) Ty
 lookupAsm x = do
-  mt <- asks (M.lookup x . getModEnv)
+  mt <- asks (M.lookup x . getModEnv . fst)
   case mt of
     Just t -> return t
     Nothing -> lift $ lookup x
 
+checkResult :: MonadError String m => Ty -> CA m ()
+checkResult t0 = do
+  t1 <- asks snd
+  unless (t0 == t1) $ throwError $ "expected branch result with type "
+    ++ show t1 ++ ", but got " ++ show t0
+  
 checkStore :: MonadError String m => Name -> Ty -> CA m ()
 checkStore x t0 = do
-  mt <- asks (M.lookup x . getModEnv)
+  mt <- asks (M.lookup x . getModEnv . fst)
   case mt of
     Just t1 | t0 == t1 -> return ()
             | otherwise -> throwError $ "expected assignment to " ++  show x 
@@ -92,8 +101,11 @@ checkAsm (AddI x1 x2 x3 : is) = do
   checkAsm is
 checkAsm (BrI cond x t f : []) = do
   checkCond cond x
-  checkApply t
-  checkApply f
+  t0 <- checkApply t
+  t1 <- checkApply f
+  unless (t0 == t1) $ throwError $ "expected both cases of branch to have the same type, got " 
+    ++ show t0 ++ " and " ++ show t1
+  checkResult t0
 checkAsm (BrI _ _ _ _ : _is ) = throwError "unexpected instructions after branch"
 
 checkCond :: Monad m => BranchCond -> Name -> CA (C m) ()
@@ -103,11 +115,11 @@ checkCond _cond x = do
     IntT -> return ()
     _ -> throwError $ "expected conditional branch with integer argument, got " ++  show t
 
-checkApply :: Monad m => (Name, [Name]) -> CA (C m) ()
+checkApply :: Monad m => (Name, [Name]) -> CA (C m) Ty
 checkApply (x, args) = do
   t <- lookupAsm x
   case t of
-    LabelT ts -> zipWithM_ checkArg args ts
+    FunT ts tret -> zipWithM_ checkArg args ts >> return tret
     _ -> throwError $ "expected " ++ show x ++ "  of label type, got " ++ show t
 
 checkArg :: Monad m => Name -> Ty -> CA (C m) ()

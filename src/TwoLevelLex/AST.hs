@@ -42,12 +42,12 @@ data Expr =
   | ProjE Nat Expr
   | LetE ValBind Expr Expr
   | AsmE [ValBind] [Asm]
-  | LabelE [ValBind] Expr
+  | LamE [ValBind] Expr
   deriving Show
   
 data Ty =
   IntT
-  | LabelT ([Ty] {- → ⊥ -})
+  | FunT [Ty] Ty
   | ProdT [Ty]
   deriving (Show, Eq)
 
