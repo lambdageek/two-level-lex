@@ -47,9 +47,9 @@ data Expr =
   
 data Ty =
   IntT
-  | LabelT (Ty {- → ⊥ -})
+  | LabelT ([Ty] {- → ⊥ -})
   | ProdT [Ty]
-  deriving Show
+  deriving (Show, Eq)
 
   
 data Asm = 

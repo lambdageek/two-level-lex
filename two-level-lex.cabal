@@ -19,6 +19,7 @@ Executable two-level-lex
     mtl >= 2.1.2
     
   hs-source-dirs: main, src
-  exposed-modules:
+  other-modules:
     TwoLevelLex.AST
+    TwoLevelLex.Check
     TwoLevelLex.Step
