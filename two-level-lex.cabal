@@ -1,0 +1,24 @@
+Name: two-level-lex
+Version: 0.0.0
+License: BSD3
+Author: Aleksey Kliger <aleksey@lambdageek.org>
+Maintainer: Aleksey Kliger <Aleksey@lambdageek.org>
+Homepage: http://github.com/lambdageek/two-level-lex
+Build-Type: Simple
+Cabal-version: >= 1.9.2
+
+Copyright: (c) 2013 Aleksey Kliger	
+
+Executable two-level-lex
+  main-is: Main.hs
+  ghc-options: -Wall
+  build-depends: 
+    base,
+    transformers,
+    containers,
+    mtl >= 2.1.2
+    
+  hs-source-dirs: main, src
+  exposed-modules:
+    TwoLevelLex.AST
+    TwoLevelLex.Step
